@@ -55,6 +55,10 @@ void <%= name %>_deinit(UDF_INIT *initid)
     *is_null = true;
     return 0;
   }
+  if (mrb_nil_p(ret)) {
+    *is_null = true;
+    return 0;
+  }
 <% if return_type == String %>
   *length = RSTRING_LEN(ret);
 <% end %>
