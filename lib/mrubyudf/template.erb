@@ -9,13 +9,13 @@ extern const uint8_t <%= name %>_mrb[];
 
 bool <%= name %>_init(UDF_INIT *initid, UDF_ARGS *args, char *message)
 {
-  if (args->arg_count != <%= nargs %>) {
-    strcpy(message, "<%= name %>() requires <%= nargs %> argument(s)");
+  if (args->arg_count != <%= arguments.size %>) {
+    strcpy(message, "<%= name %>() requires <%= arguments.size %> argument(s)");
     return true;
   }
-  <% arguments.each_with_index do |arg, i| %>
+<% arguments.each_with_index do |arg, i| %>
   args->arg_type[<%= i %>] = <%= mysql_type arg %>;
-  <% end %>
+<% end %>
   mrb_state *mrb = mrb_open();
   if (!mrb) {
     strcpy(message, "mrb_open() error");
@@ -41,16 +41,22 @@ void <%= name %>_deinit(UDF_INIT *initid)
   }
 }
 
-long long <%= name %>(UDF_INIT *initid, UDF_ARGS *args, char *is_null, char *error)
+<%= return_ctype %> <%= name %>(UDF_INIT *initid, UDF_ARGS *args,
+<% if return_type == String %>
+  char *result, unsigned long *length,
+<% end %>
+  char *is_null, char *error)
 {
   mrb_state *mrb = (mrb_state *)initid->ptr;
-  long long n = *((long long *)args->args[0]);
-  mrb_value ret = mrb_funcall(mrb, mrb_top_self(mrb), "<%= name %>", <%= nargs %>, <%= arg_mysql_to_mruby %>);
+  mrb_value ret = mrb_funcall(mrb, mrb_top_self(mrb), "<%= name %>", <%= arguments.size %>, <%= arg_mysql_to_mruby %>);
   if (mrb->exc) {
     mrb_value s = mrb_funcall(mrb, mrb_obj_value(mrb->exc), "inspect", 0);
-    fprintf(stderr, "<%= name %>(%lld): %s\n", n, mrb_string_value_cstr(mrb, &s));
+    fprintf(stderr, "<%= name %>: %s\n", mrb_string_value_cstr(mrb, &s));
     *is_null = true;
     return 0;
   }
-  return mrb_fixnum(ret);
+<% if return_type == String %>
+  *length = RSTRING_LEN(ret);
+<% end %>
+  return <%= return_mruby_to_mysql %>;
 }

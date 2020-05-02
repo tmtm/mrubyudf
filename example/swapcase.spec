@@ -1,8 +1,8 @@
 #!ruby
 MrubyUdf.function do |f|
-  f.name = 'fib'
-  f.return_type = Integer
+  f.name = 'swapcase'
+  f.return_type = String
   f.arguments = [
-    Integer
+    String
   ]
 end
