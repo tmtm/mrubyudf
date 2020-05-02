@@ -1,0 +1,40 @@
+diff --git a/build_config.rb b/build_config.rb
+index 254a28ce..310191e3 100644
+--- a/build_config.rb
++++ b/build_config.rb
+@@ -35,6 +35,10 @@ MRuby::Build.new do |conf|
+   #   cc.compile_options = %Q[%{flags} -MMD -o "%{outfile}" -c "%{infile}"]
+   # end
+ 
++  conf.cc do |cc|
++    cc.flags = '-fPIC'
++  end
++
+   # mrbc settings
+   # conf.mrbc do |mrbc|
+   #   mrbc.compile_options = "-g -B%{funcname} -o-" # The -g option is required for line numbers
+@@ -59,6 +63,11 @@ MRuby::Build.new do |conf|
+   #   archiver.archive_options = 'rs "%{outfile}" %{objs}'
+   # end
+ 
++  conf.archiver do |archiver|
++    archiver.command = 'gcc'
++    archiver.archive_options = '-shared -o %{outfile} %{objs}'
++  end
++
+   # Parser generator settings
+   # conf.yacc do |yacc|
+   #   yacc.command = ENV['YACC'] || 'bison'
+diff --git a/lib/mruby/build.rb b/lib/mruby/build.rb
+index 8154b2b1..80f0b782 100644
+--- a/lib/mruby/build.rb
++++ b/lib/mruby/build.rb
+@@ -61,7 +61,7 @@ module MRuby
+         if ENV['OS'] == 'Windows_NT'
+           @exts = Exts.new('.o', '.exe', '.a')
+         else
+-          @exts = Exts.new('.o', '', '.a')
++          @exts = Exts.new('.o', '', '.so')
+         end
+ 
+         build_dir = build_dir || ENV['MRUBY_BUILD_DIR'] || "#{MRUBY_ROOT}/build"
