@@ -25,10 +25,11 @@ class MrubyUdf
       mrbc = [mruby_path, 'bin/mrbc'].join('/')
       cc = ENV['CC'] || 'gcc'
       cflags = ENV['CFLAGS'] || '-shared -fPIC'
-      include_path = "-I #{mruby_path}/include #{mysql_include}"
-      library_path = "-L #{mruby_path}/build/host/lib"
+      cflags += " -I #{mruby_path}/include #{mysql_include}"
+      mruby_libpath = "#{mruby_path}/build/host/lib"
+      libflags = "-L#{mruby_libpath} -Wl,--rpath,#{mruby_libpath}"
       exec_command "#{mrbc} -B #{f.name}_mrb #{f.name}.rb"
-      exec_command "#{cc} #{cflags} #{include_path} #{f.name}_udf.c #{f.name}.c #{library_path} -lmruby -lm -o #{f.name}.so"
+      exec_command "#{cc} #{cflags} #{f.name}_udf.c #{f.name}.c #{libflags} -lmruby -lm -o #{f.name}.so"
     end
 
     def exec_command(str)
