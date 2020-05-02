@@ -48,7 +48,11 @@ void <%= name %>_deinit(UDF_INIT *initid)
   char *is_null, char *error)
 {
   mrb_state *mrb = (mrb_state *)initid->ptr;
-  mrb_value ret = mrb_funcall(mrb, mrb_top_self(mrb), "<%= name %>", <%= arguments.size %>, <%= arg_mysql_to_mruby %>);
+  mrb_value ret = mrb_funcall(mrb, mrb_top_self(mrb), "<%= name %>", <%= arguments.size %>
+<% if arguments.size > 0 %>
+  , <%= arg_mysql_to_mruby %>
+<% end %>
+  );
   if (mrb->exc) {
     mrb_value s = mrb_funcall(mrb, mrb_obj_value(mrb->exc), "inspect", 0);
     fprintf(stderr, "<%= name %>: %s\n", mrb_string_value_cstr(mrb, &s));

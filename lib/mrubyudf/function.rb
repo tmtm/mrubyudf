@@ -29,7 +29,7 @@ class MrubyUdf
         when arg == Integer
           "mrb_fixnum_value(*((long long *)args->args[#{i}]))"
         when arg == Float
-          "mrb_float_value(*((double *)args->args[#{i}]))"
+          "mrb_float_value(mrb, *((double *)args->args[#{i}]))"
         when arg == String
           "mrb_str_new_cstr(mrb, (char *)args->args[#{i}])"
         end
