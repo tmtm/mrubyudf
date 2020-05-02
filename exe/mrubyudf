@@ -1,0 +1,13 @@
+#!/usr/bin/ruby
+
+require 'mrubyudf'
+if ARGV.size != 1
+  $stderr.puts "#$0 foo.spec"
+  exit 1
+end
+spec = ARGV.first
+load spec
+f = MrubyUdf.function
+MrubyUdf::Template.new(f).c
+
+
