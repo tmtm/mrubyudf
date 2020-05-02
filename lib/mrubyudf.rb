@@ -1,12 +1,14 @@
-require "mrubyudf/version"
+require_relative 'mrubyudf/version'
+require_relative 'mrubyudf/function'
+require_relative 'mrubyudf/template'
 
 class MrubyUdf
   class << self
-    attr_writer :function
     def function(&block)
+      return @function unless block
       f = MrubyUdf::Function.new
       block.call f
-      self.function = f
+      @function = f
     end
   end
 end
