@@ -1,42 +1,4 @@
 #!/usr/bin/ruby
 require 'mrubyudf'
 
-if ARGV.size != 1
-  $stderr.puts "Usage: #$0 foo.spec"
-  exit false
-end
-spec = ARGV.first
-load spec
-
-def search_mruby_path
-  ENV['PATH'].split(/:/).each do |path|
-    return File.dirname(path) if File.executable? "#{path}/mrbc"
-  end
-  raise "command not found: mrbc"
-end
-
-def mysql_include
-  i = %x(mysql_config --include).chomp
-  exit false unless $?.success?
-  i
-end
-
-Dir.chdir(File.dirname(spec)) do
-  f = MrubyUdf.function
-  c = MrubyUdf::Template.new(f).result
-  File.write("#{f.name}_udf.c", c)
-  mruby_path = ENV['MRUBY_PATH'] || search_mruby_path
-  mrbc = [mruby_path, 'bin/mrbc'].join('/')
-  cc = ENV['CC'] || 'gcc'
-  cflags = ENV['CFLAGS'] || '-shared -fPIC'
-  include_path = ["-I #{mruby_path}/include", mysql_include]
-  library_path = "-L #{mruby_path}/build/host/lib"
-  command = [mrbc, '-B', "#{f.name}_mrb", "#{f.name}.rb"].join(' ')
-  puts command
-  system command
-  exit false unless $?.success?
-  command = [cc, cflags, include_path, "#{f.name}_udf.c", "#{f.name}.c", library_path, '-lmruby', '-lm', '-o', "#{f.name}.so"].join(' ')
-  puts command
-  system command
-  exit false unless $?.success?
-end
+MrubyUdf::Command.run
