@@ -12,60 +12,52 @@
 
 mysql_config コマンドと MySQL のヘッダファイルが必要です。
 
-mysql-8.0.20-linux-glibc2.12-x86_64.tar.xz みたいなファイルを展開した中には入ってるはずです。
+mysql-8.4.2-linux-glibc2.28-x86_64.tar.xz みたいなファイルを展開した中には入ってるはずです。
 
 それ以外の場合は MySQL 開発環境のインストールが必要になるかも知れません。
 Ubuntu の場合は libmysqlclient-dev パッケージをインストールすればいいと思います。
 
 ## 使い方
 
-
-まず mruby をインストールする必要があります。mruby を動的リンクにするためのパッチをあてて make します。
+まず mruby をインストールする必要があります。mruby を動的リンクにするため config を指定して make します。
 
 ```sh
 % git clone git@github.com:mruby/mruby.git
 % cd mruby
-% patch -p1 < $GEM_HOME/gems/mrubyudf-0.*/misc/mruby-shared.patch
-% make
+% MRUBY_CONFIG=$GEM_HOME/gems/mrubyudf-0.2.0/misc/shared.rb make
 ```
 
 うまくいかない場合は頑張ってください。
 
-この mruby ディレクトリを MRUBY_PATH 環境変数に設定しておきます。
+この mruby ディレクトリを MRUBY_PATH 変数に設定しておきます。
 
 ```sh
-% export MRUBY_PATH=/path/to/mruby
+% MRUBY_PATH=$(pwd)/bin
 ```
 
 関数本体を作ります。ここではフィボナッチ数を返す fib() 関数を fib.rb ファイルとして作ります。
 
 ```ruby
-LONG_LONG_MAX = 9223372036854775807
-
+FIXNUM_MAX = 2**62-1
 def fib(n)
-  b = 1
-  c = 0
-  n.times do
-    a, b = b, c
-    c = a + b
-    raise 'Overflow' if c > LONG_LONG_MAX
-  end
-  c
+  a, b = 1, 0
+  n.times { a, b = b, a + b }
+  raise 'Overflow' if b > FIXNUM_MAX
+  b
 end
 ```
 
 mruby で実行して動きを確かめます。
 
 ```sh
-% $MRUBY_PATH/bin/mruby -r ./fib.rb -e 'p fib(10)'
+% $MRUBY_PATH/mruby -r ./fib.rb -e 'p fib(10)'
 55
-% $MRUBY_PATH/bin/mruby -r ./fib.rb -e 'p fib(92)'
-7540113804746346429
-% $MRUBY_PATH/bin/mruby -r ./fib.rb -e 'p fib(93)'
+% $MRUBY_PATH/mruby -r ./fib.rb -e 'p fib(90)'
+2880067194370816120
+% $MRUBY_PATH/mruby -r ./fib.rb -e 'p fib(91)'
 trace (most recent call last):
-        [2] -e:1
-        [1] -e:6:in fib
--e:9:in fib: Overflow (RuntimeError)
+        [1] -e:1
+./fib.rb:5:in fib: Overflow (RuntimeError)
 ```
 
 関数名、戻り値の型、引数の型等の情報を fib.spec ファイルで次のような感じで作ります。
@@ -83,7 +75,7 @@ end
 コンパイル。
 
 ```sh
-% mrubyudf fib.spec
+% PATH=$MRUBY_PATH:$PATH mrubyudf fib.spec
 ```
 
 うまくいけば fib.so ファイルができます。
@@ -91,9 +83,7 @@ end
 これを MySQL のプラグインディレクトリにコピーします。
 
 ```sh
-% mysql_config --plugindir
-/usr/local/mysql/lib/plugin
-% sudo cp fib.so /usr/local/mysql/lib/plugin/
+% sudo cp fib.so $(mysql_config --plugindir)
 ```
 
 MySQL に組み込みます。一度やっておけば mysqld を再起動しても自動的に組み込まれます。
@@ -112,23 +102,23 @@ mysql> select fib(10);
 +---------+
 |      55 |
 +---------+
-1 row in set (0.04 sec)
+1 row in set (0.01 sec)
 
-mysql> select fib(92);
+mysql> select fib(90);
 +---------------------+
-| fib(92)             |
+| fib(90)             |
 +---------------------+
-| 7540113804746346429 |
+| 2880067194370816120 |
 +---------------------+
-1 row in set (0.04 sec)
+1 row in set (0.01 sec)
 
-mysql> select fib(93);
+mysql> select fib(91);
 +---------+
-| fib(93) |
+| fib(91) |
 +---------+
 |    NULL |
 +---------+
-1 row in set (0.04 sec)
+1 row in set (0.00 sec)
 ```
 
 関数が要らなくなったら破棄します。
